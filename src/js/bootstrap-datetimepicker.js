@@ -26,7 +26,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-;(function (root, factory) {
+; (function (root, factory) {
     'use strict';
     if (typeof define === 'function' && define.amd) {
         // AMD is used - Register as an anonymous module.
@@ -184,7 +184,7 @@ THE SOFTWARE.
             fillSeconds();
             update();
             showMode();
-            if (!getPickerInput().prop('disabled')) {
+            if (!getPickerInput().prop('disabled') && !getPickerInput().prop('readonly')) {
                 attachDatePickerEvents();
             }
             if (picker.options.defaultDate !== '' && getPickerInput().val() === '') {
@@ -363,7 +363,7 @@ THE SOFTWARE.
             errored = false;
             picker.element.trigger({
                 type: 'dp.change',
-                date: moment(picker.date),
+                date: picker.unset ? null : moment(picker.date),
                 oldDate: moment(oldDate)
             });
 
@@ -474,7 +474,7 @@ THE SOFTWARE.
                 } else if (prevMonth.year() > year || (prevMonth.year() === year && prevMonth.month() > month)) {
                     clsName += ' new';
                 }
-                if (prevMonth.isSame(moment({y: picker.date.year(), M: picker.date.month(), d: picker.date.date()}))) {
+                if (prevMonth.isSame(moment({ y: picker.date.year(), M: picker.date.month(), d: picker.date.date() }))) {
                     clsName += ' active';
                 }
                 if (isInDisableDates(prevMonth, 'day') || !isInEnableDates(prevMonth)) {
@@ -573,7 +573,7 @@ THE SOFTWARE.
         fillMinutes = function () {
             var table = picker.widget.find('.timepicker .timepicker-minutes table'), html = '', current = 0, i, j, step = picker.options.minuteStepping;
             table.parent().hide();
-            if (step === 1)  {
+            if (step === 1) {
                 step = 5;
             }
             for (i = 0; i < Math.ceil(60 / step / 4) ; i++) {
@@ -803,7 +803,7 @@ THE SOFTWARE.
                 rv = actions[action].apply(picker, arguments);
             stopEvent(e);
             if (!picker.date) {
-                picker.date = moment({y: 1970});
+                picker.date = moment({ y: 1970 });
             }
             set();
             fillTime();
@@ -888,6 +888,7 @@ THE SOFTWARE.
                 if (picker.component) {
                     picker.component.on('click', $.proxy(picker.show, this));
                     picker.component.on('mousedown', $.proxy(stopEvent, this));
+                    picker.element.find('.datepickerclear').on('click', $.proxy(picker.clear, this));
                 } else {
                     picker.element.on('click', $.proxy(picker.show, this));
                 }
@@ -915,7 +916,7 @@ THE SOFTWARE.
                     'focus': picker.show,
                     'change': change,
                     'click': picker.show,
-                    'blur' : picker.hide
+                    'blur': picker.hide
                 });
             } else {
                 picker.element.off({
@@ -1171,6 +1172,14 @@ THE SOFTWARE.
             );
         };
 
+        picker.clear = function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var oldDate = moment(picker.date);
+            picker.setValue(null);
+            notifyChange(oldDate, 'function');
+        };
+
         picker.destroy = function () {
             detachDatePickerEvents();
             detachDatePickerGlobalEvents();
@@ -1182,7 +1191,7 @@ THE SOFTWARE.
         };
 
         picker.show = function (e) {
-            if (getPickerInput().prop('disabled')) {
+            if (getPickerInput().prop('disabled') || getPickerInput().prop('readonly')) {
                 return;
             }
             if (picker.options.useCurrent) {
@@ -1240,6 +1249,17 @@ THE SOFTWARE.
             attachDatePickerEvents();
         };
 
+        picker.readonly = function (value) {
+            var input = getPickerInput();
+            if ((value && input.prop('readonly')) || (!value && !input.prop('readonly'))) return;
+
+            input.prop('readonly', value);
+            if (value)
+                detachDatePickerEvents();
+            else
+                attachDatePickerEvents();
+        };
+
         picker.hide = function () {
             // Ignore event if in the middle of a picker transition
             var collapse = picker.widget.find('.collapse'), i, collapseData;
@@ -1276,7 +1296,7 @@ THE SOFTWARE.
             if (newDate.isValid()) {
                 picker.date = newDate;
                 set();
-                picker.viewDate = moment({y: picker.date.year(), M: picker.date.month()});
+                picker.viewDate = moment({ y: picker.date.year(), M: picker.date.month() });
                 fillDate();
                 fillTime();
             }
@@ -1366,7 +1386,7 @@ THE SOFTWARE.
         useCurrent: true,
         calendarWeeks: false,
         minuteStepping: 1,
-        minDate: moment({y: 1900}),
+        minDate: moment({ y: 1900 }),
         maxDate: moment().add(100, 'y'),
         showToday: true,
         collapse: true,
